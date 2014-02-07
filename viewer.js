@@ -1,31 +1,64 @@
-var geoData,
-	width = 960,
-    height = 1160;
+myObject = {
+  width: 960,
+  height: 1160,
 
+  load: function() {
 
+    myObject.svg = d3.select("body").append("svg")
+            .attr("width", myObject.width)
+            .attr("height", myObject.height);
 
-d3.json("http://localhost:1337/hpms/34/geo", function(err, data) {
-	geoData = data;
-  	visualize();
-});
+    d3.json("http://localhost:1337/hpms/42/geo", function(err, data) {
+      myObject.geoData = data;
+      myObject.visualize();
+    });
 
-function visualize() {
+  }, // end load
 
-	var svg = d3.select("body").append("svg")
-    		.attr("width", width)
-    		.attr("height", height);
+  visualize: function() {
 
-    var projection = d3.geo.albers()
-    .center([72, 44])
-    //.rotate([4.4, 0])
-    .parallels([30, 40])
-    .scale(500000)
-    .translate([width / 2, height / 2]);
+    // convert the topoJSON object into geoJSON
+    geoJSON = topojson.feature(myObject.geoData, myObject.geoData.objects.geo);
 
-	svg.selectAll("path")
-      .data(topojson.feature(geoData, geoData.objects.geo).features)
-      .enter()
-      .append("path")
-      .attr("d", d3.geo.path().projection(projection));
+    // make an estimate projection
+    var center = d3.geo.centroid(geoJSON);
+    var scale = 150;
+    var offset = [myObject.width/2, myObject.height/2];
 
+    var projection = d3.geo.mercator()
+                       .center(center)
+                       .scale(scale)
+                       .translate(offset);
+
+    // make an estimate path
+    var path = d3.geo.path().projection(projection)
+
+    // adjust scale based on estimates
+    var bounds = path.bounds(geoJSON);
+    var hScale = scale*myObject.width/(bounds[1][0]-bounds[0][0]);
+    var vScale = scale*myObject.height/(bounds[1][1]-bounds[0][1]);
+
+    scale = (hScale < vScale) ? hScale : vScale;
+    offset = [myObject.width-(bounds[0][0]+bounds[1][0])/2,
+              myObject.height-(bounds[0][1]+bounds[1][1])/2];
+
+    projection = d3.geo.mercator()
+                   .center(center)
+                   .scale(scale)
+                   .translate(offset);
+
+    path = d3.geo.path().projection(projection)
+
+  	myObject.svg.selectAll("path")
+            .data(geoJSON.features)
+            .enter()
+            .append("path")
+            .attr("d", path);
+
+  } // end visualize
+
+} // end myObject
+
+window.onload = function() {
+  myObject.load();
 }
