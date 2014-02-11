@@ -55,10 +55,34 @@ myObject = {
             .append("path")
             .attr("d", path);
 
-  } // end visualize
+  }, // end visualize
+
+  createDropDown: function() {
+
+    var myData = [];
+
+    $.ajax({url: "http://localhost:1337/hpms",
+            type : "GET",
+            async:false
+           })
+     .done(function(data){
+
+      data.forEach( function(d) {
+        if (d.id < 82) {
+          console.log(d.tableName)
+          myData.push(d.tableName)
+        }
+      })
+     });
+
+     console.log(myData);
+
+    myObject.svg = d3.select("body").append("select")
+  }
 
 } // end myObject
 
 window.onload = function() {
-  myObject.load();
+  //myObject.load();
+  myObject.createDropDown();
 }
