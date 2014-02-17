@@ -2,13 +2,9 @@ myObject = {
   width: 960,
   height: 1160,
 
-  load: function() {
+  load: function(code) {
 
-    myObject.svg = d3.select("body").append("svg")
-            .attr("width", myObject.width)
-            .attr("height", myObject.height);
-
-    d3.json("http://localhost:1337/hpms/42/geo", function(err, data) {
+    d3.json("http://localhost:1337/hpms/"+code+"/geo", function(err, data) {
       myObject.geoData = data;
       myObject.visualize();
     });
@@ -49,6 +45,8 @@ myObject = {
 
     path = d3.geo.path().projection(projection)
 
+    myObject.svg.selectAll("path").remove();
+    
   	myObject.svg.selectAll("path")
             .data(geoJSON.features)
             .enter()
@@ -59,30 +57,47 @@ myObject = {
 
   createDropDown: function() {
 
+    var dropBox = d3.select("body")
+                    .append("select")
+                    .on("change", function() {
+                      var code = this.options[this.selectedIndex].value;
+                      
+                      myObject.load(code);
+                    });
+
+    dropBox.append("option")
+           .text("choose a state");
+
     var myData = [];
 
     $.ajax({url: "http://localhost:1337/hpms",
-            type : "GET",
-            async:false
+            type: "GET",
+            async: false
            })
      .done(function(data){
-
-      data.forEach( function(d) {
-        if (d.id < 82) {
-          console.log(d.tableName)
-          myData.push(d.tableName)
-        }
-      })
+        data.forEach( function(d) {
+          if (d.id < 82) {
+            var obj = {name:d.tableName, code:d.stateFIPS};
+            myData.push(obj)
+          }
+        })
      });
 
-     console.log(myData);
-
-    myObject.svg = d3.select("body").append("select")
+    dropBox.selectAll("option")
+           .data(myData)
+           .enter()
+           .append("option")
+           .text(function(d) {return d.name;})
+           .attr("value", function(d) {return d.code;});
   }
 
 } // end myObject
 
 window.onload = function() {
-  //myObject.load();
   myObject.createDropDown();
+  myObject.svg = d3.select("body")
+                   .append("svg")
+                   .attr("width", myObject.width)
+                   .attr("height", myObject.height);
+  //myObject.load();
 }
