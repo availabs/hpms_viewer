@@ -1,24 +1,34 @@
 myObject = {
 
+  mapState: null,
   roadType: 0,
+  mapLoaded: false,
 
-  load: function(code) {
+  load: function() {
 
     // load data from remote server
-    $.ajax({url: "http://localhost:1337/hpms/"+code+"/geo",
+    $.ajax({url: "http://localhost:1337/hpms/"+myObject.mapState+"/geo",
             type: "POST",
             dataType: "json",
             data: {"roadType": myObject.roadType}
            })
      .done(function(data) {
-       myObject.visualize(topojson.feature(data, data.objects.geo));
-     });
+        // clear svg
+        myObject.svg.selectAll("g").remove();
 
+        // draw map
+        myObject.mapLoaded = true;
+        myObject.visualize(topojson.feature(data, data.objects.geo));
+      });
   }, // end load
 
   visualize: function(geoJSON) {
-    // clear svg
-    myObject.svg.selectAll("g").remove();
+    var min = d3.min(geoJSON.features, function(d) {
+      return d.properties.aadt;
+    });
+    var max = d3.max(geoJSON.features, function(d) {
+      return d.properties.aadt;
+    });
 
     // reposition map
     var geoCenter = d3.geo.centroid(geoJSON);
@@ -33,6 +43,10 @@ myObject = {
                    .data(geoJSON.features)
                    .enter()
                    .append("path");
+                  //.attr("stroke-width",function(d){ return radius(d.properties.aadt)})
+
+    //var width = bounds[0][0]-bounds,
+    //    height = bounds[1];
 
     myObject.leafletMap.on("viewreset", reset)
     reset();
@@ -70,7 +84,8 @@ myObject = {
     var dropDown = d3.select("#header")
                      .append("select")
                      .on("change", function() {
-                       myObject.load(this.options[this.selectedIndex].value);
+                       myObject.mapState = this.options[this.selectedIndex].value;
+                       myObject.load();
                      });
 
     dropDown.append("option")
@@ -105,6 +120,8 @@ myObject = {
                      .append("select")
                      .on("change", function() {
                        myObject.roadType = this.options[this.selectedIndex].value;
+                       if (myObject.mapLoaded)
+                         myObject.load();
                      });
 
     roadType.append("option")
@@ -143,6 +160,7 @@ myObject = {
 } // end myObject
 
 window.onload = function() {
+  myObject.mapLoaded = false;
   myObject.leafletMap = new L.Map("mapDiv", {center: [40, -100], zoom: 4})
                         .addLayer(new L.TileLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
 
