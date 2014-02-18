@@ -1,9 +1,10 @@
 myObject = {
   width: 960,
-  height: 1160,
+  height: 500,
 
   load: function(code) {
 
+    // load data from remote server
     d3.json("http://localhost:1337/hpms/"+code+"/geo", function(err, data) {
       myObject.geoData = data;
       myObject.visualize();
@@ -57,16 +58,16 @@ myObject = {
 
   createDropDown: function() {
 
-    var dropBox = d3.select("body")
-                    .append("select")
-                    .on("change", function() {
-                      var code = this.options[this.selectedIndex].value;
+    var dropDown = d3.select("#header")
+                     .append("select")
+                     .on("change", function() {
+                       var code = this.options[this.selectedIndex].value;
                       
-                      myObject.load(code);
-                    });
+                       myObject.load(code);
+                     });
 
-    dropBox.append("option")
-           .text("choose a state");
+    dropDown.append("option")
+            .text("choose a state");
 
     var myData = [];
 
@@ -83,21 +84,21 @@ myObject = {
         })
      });
 
-    dropBox.selectAll("option")
-           .data(myData)
-           .enter()
-           .append("option")
-           .text(function(d) {return d.name;})
-           .attr("value", function(d) {return d.code;});
+    dropDown.selectAll("option")
+            .data(myData)
+            .enter()
+            .append("option")
+            .text(function(d) {return d.name;})
+            .attr("value", function(d) {return d.code;});
   }
 
 } // end myObject
 
 window.onload = function() {
   myObject.createDropDown();
-  myObject.svg = d3.select("body")
+  myObject.svg = d3.select("#mapDiv")
                    .append("svg")
                    .attr("width", myObject.width)
-                   .attr("height", myObject.height);
-  //myObject.load();
+                   .attr("height", myObject.height)
+                   .attr("id", "map");
 }

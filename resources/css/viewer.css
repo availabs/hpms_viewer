@@ -10,3 +10,15 @@ path:hover {
 	stroke:#00f;
 	stroke-width: 3px;
 }
+
+#mapDiv {
+	margin: 0 auto;
+	width: 960px;
+	height: 500px;
+}
+
+#map {
+	display: block;
+	margin: 0 auto;
+}
+
