@@ -1,58 +1,67 @@
 myObject = {
-  width: 960,
-  height: 500,
+
+  roadType: 0,
 
   load: function(code) {
 
     // load data from remote server
-    d3.json("http://localhost:1337/hpms/"+code+"/geo", function(err, data) {
-      myObject.geoData = data;
-      myObject.visualize();
-    });
+    $.ajax({url: "http://localhost:1337/hpms/"+code+"/geo",
+            type: "POST",
+            dataType: "json",
+            data: {"roadType": myObject.roadType}
+           })
+     .done(function(data) {
+       myObject.visualize(topojson.feature(data, data.objects.geo));
+     });
 
   }, // end load
 
-  visualize: function() {
+  visualize: function(geoJSON) {
+    // clear svg
+    myObject.svg.selectAll("g").remove();
 
-    // convert the topoJSON object into geoJSON
-    geoJSON = topojson.feature(myObject.geoData, myObject.geoData.objects.geo);
+    // reposition map
+    var geoCenter = d3.geo.centroid(geoJSON);
+    myObject.leafletMap.setView([geoCenter[1], geoCenter[0]], 7);
 
-    // make an estimate projection
-    var center = d3.geo.centroid(geoJSON);
-    var scale = 150;
-    var offset = [myObject.width/2, myObject.height/2];
+    var g = myObject.svg.append("g").attr("class", "leaflet-zoom-hide");
 
-    var projection = d3.geo.mercator()
-                       .center(center)
-                       .scale(scale)
-                       .translate(offset);
+    var transform = d3.geo.transform({point: projectPoint}),
+        path = d3.geo.path().projection(transform),
+        bounds = path.bounds(geoJSON),
+        feature = g.selectAll("path")
+                   .data(geoJSON.features)
+                   .enter()
+                   .append("path");
 
-    // make an estimate path
-    var path = d3.geo.path().projection(projection)
+    myObject.leafletMap.on("viewreset", reset)
+    reset();
 
-    // adjust scale based on estimates
-    var bounds = path.bounds(geoJSON);
-    var hScale = scale*myObject.width/(bounds[1][0]-bounds[0][0]);
-    var vScale = scale*myObject.height/(bounds[1][1]-bounds[0][1]);
+    // reposition the SVG to cover the features
+    function reset() {
+      // recalculate bounds
+      bounds = path.bounds(geoJSON)
+      var topLeft = bounds[0],
+          bottomRight = bounds[1];
 
-    scale = (hScale < vScale) ? hScale : vScale;
-    offset = [myObject.width-(bounds[0][0]+bounds[1][0])/2,
-              myObject.height-(bounds[0][1]+bounds[1][1])/2];
+      // adjust SVG size and position
+      myObject.svg.attr("width", bottomRight[0]-topLeft[0] + "px")
+         .attr("height", bottomRight[1]-topLeft[1] + "px")
+         .style("left", topLeft[0] + "px")
+         .style("top", topLeft[1] + "px");
 
-    projection = d3.geo.mercator()
-                   .center(center)
-                   .scale(scale)
-                   .translate(offset);
+      // apply transform to SVG group
+      g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
 
-    path = d3.geo.path().projection(projection)
+      // draw paths
+      feature.attr("d", path);
+    }
 
-    myObject.svg.selectAll("path").remove();
-    
-  	myObject.svg.selectAll("path")
-            .data(geoJSON.features)
-            .enter()
-            .append("path")
-            .attr("d", path);
+    // use Leaflet to implement a d3 geometric transformation
+    function projectPoint(x, y) {
+      var point = myObject.leafletMap.latLngToLayerPoint(new L.LatLng(y, x));
+      this.stream.point(point.x, point.y);
+    };
 
   }, // end visualize
 
@@ -61,9 +70,7 @@ myObject = {
     var dropDown = d3.select("#header")
                      .append("select")
                      .on("change", function() {
-                       var code = this.options[this.selectedIndex].value;
-                      
-                       myObject.load(code);
+                       myObject.load(this.options[this.selectedIndex].value);
                      });
 
     dropDown.append("option")
@@ -71,6 +78,7 @@ myObject = {
 
     var myData = [];
 
+    // get all available table names
     $.ajax({url: "http://localhost:1337/hpms",
             type: "GET",
             async: false
@@ -90,15 +98,57 @@ myObject = {
             .append("option")
             .text(function(d) {return d.name;})
             .attr("value", function(d) {return d.code;});
+  }, // end createDropDown
+
+  typeSelector: function() {
+    var roadType = d3.select("#header")
+                     .append("select")
+                     .on("change", function() {
+                       myObject.roadType = this.options[this.selectedIndex].value;
+                     });
+
+    roadType.append("option")
+                     .text("All types")
+                     .attr("value", 0);
+
+    roadType.append("option")
+                     .text("Type 1")
+                     .attr("value", 1);
+
+    roadType.append("option")
+                     .text("Type 2")
+                     .attr("value", 2);
+
+    roadType.append("option")
+                     .text("Type 3")
+                     .attr("value", 3);
+
+    roadType.append("option")
+                     .text("Type 4")
+                     .attr("value", 4);
+
+    roadType.append("option")
+                     .text("Type 5")
+                     .attr("value", 5);
+
+    roadType.append("option")
+                     .text("Type 6")
+                     .attr("value", 6);
+
+    roadType.append("option")
+                     .text("Type 7")
+                     .attr("value", 7);
   }
 
 } // end myObject
 
 window.onload = function() {
+  myObject.leafletMap = new L.Map("mapDiv", {center: [40, -100], zoom: 4})
+                        .addLayer(new L.TileLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
+
+  myObject.svg = d3.select(myObject.leafletMap.getPanes().overlayPane).append("svg");
+
   myObject.createDropDown();
-  myObject.svg = d3.select("#mapDiv")
-                   .append("svg")
-                   .attr("width", myObject.width)
-                   .attr("height", myObject.height)
-                   .attr("id", "map");
+
+  myObject.typeSelector();
 }
