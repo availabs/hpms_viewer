@@ -23,12 +23,38 @@ myObject = {
   }, // end load
 
   visualize: function(geoJSON) {
+    
     var min = d3.min(geoJSON.features, function(d) {
       return d.properties.aadt;
     });
     var max = d3.max(geoJSON.features, function(d) {
       return d.properties.aadt;
     });
+
+    var values = [];
+    geoJSON.features.forEach(function(d) {
+      values.push(d.properties.aadt);
+    });
+    var domain = ss.jenks(values, 10);
+    console.log(min, domain, max)
+
+    /*
+    var roadColor = d3.scale.linear()
+                      .domain([(max*.75), (min+(max/2))/2, min])
+                      .range([colorbrewer.RdYlGn[9][0], colorbrewer.RdYlGn[9][4], colorbrewer.RdYlGn[9][8]])
+                      .clamp([true]);
+    
+    var roadColor = d3.scale.quantize()
+                      .domain([max, min])
+                      .range(colorbrewer.RdYlGn[10]);
+    */
+    var roadColor = d3.scale.quantile()
+                      .domain(domain)
+                      .range(colorbrewer.RdYlGn[10]);
+
+    var roadWidth = d3.scale.quantize()
+                      .domain([7, 1])
+                      .range([1, 2, 3, 4, 5, 6, 7]);
 
     // reposition map
     var geoCenter = d3.geo.centroid(geoJSON);
@@ -42,13 +68,15 @@ myObject = {
         feature = g.selectAll("path")
                    .data(geoJSON.features)
                    .enter()
-                   .append("path");
-                  //.attr("stroke-width",function(d){ return radius(d.properties.aadt)})
+                   .append("path")
+                   .attr("stroke", function(d) {
+                      return roadColor(d.properties.aadt);
+                    })
+                   .attr("stroke-width", function(d) {
+                      return roadWidth(d.properties.roadType)+"px";
+                    });
 
-    //var width = bounds[0][0]-bounds,
-    //    height = bounds[1];
-
-    myObject.leafletMap.on("viewreset", reset)
+    myObject.leafletMap.on("viewreset", reset);
     reset();
 
     // reposition the SVG to cover the features
@@ -60,9 +88,9 @@ myObject = {
 
       // adjust SVG size and position
       myObject.svg.attr("width", bottomRight[0]-topLeft[0] + "px")
-         .attr("height", bottomRight[1]-topLeft[1] + "px")
-         .style("left", topLeft[0] + "px")
-         .style("top", topLeft[1] + "px");
+                  .attr("height", bottomRight[1]-topLeft[1] + "px")
+                  .style("left", topLeft[0] + "px")
+                  .style("top", topLeft[1] + "px");
 
       // apply transform to SVG group
       g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
@@ -79,7 +107,7 @@ myObject = {
 
   }, // end visualize
 
-  createDropDown: function() {
+  stateSelector: function() {
 
     var dropDown = d3.select("#header")
                      .append("select")
@@ -118,6 +146,8 @@ myObject = {
   typeSelector: function() {
     var roadType = d3.select("#header")
                      .append("select")
+                     .attr("multiple", "multiple")
+                     .attr("size", 8)
                      .on("change", function() {
                        myObject.roadType = this.options[this.selectedIndex].value;
                        if (myObject.mapLoaded)
@@ -128,33 +158,33 @@ myObject = {
                      .text("All types")
                      .attr("value", 0);
 
-    roadType.append("option")
-                     .text("Type 1")
-                     .attr("value", 1);
+    var values = [0, 1, 2, 3, 4, 5, 6, 7];
 
-    roadType.append("option")
-                     .text("Type 2")
-                     .attr("value", 2);
+    roadType.selectAll("option")
+            .data(values)
+            .enter()
+            .append("option")
+            .text(function(d) { return "Type "+d; })
+            .attr("value", function(d) { return d; });
+  },
 
-    roadType.append("option")
-                     .text("Type 3")
-                     .attr("value", 3);
+  createLegend: function() {
+    var width = 90,
+        height = 50;
 
-    roadType.append("option")
-                     .text("Type 4")
-                     .attr("value", 4);
+    var svg = d3.select("#mapLegend")
+                .append("svg")
+                .attr("width", width*10)
+                .attr("height", height);
 
-    roadType.append("option")
-                     .text("Type 5")
-                     .attr("value", 5);
-
-    roadType.append("option")
-                     .text("Type 6")
-                     .attr("value", 6);
-
-    roadType.append("option")
-                     .text("Type 7")
-                     .attr("value", 7);
+    svg.selectAll("rect")
+        .data(colorbrewer.RdYlGn[10].reverse())
+        .enter()
+        .append("rect")
+        .attr("x", function(d, i) { return i*width;})
+        .attr("height", height)
+        .attr("width", width)
+        .attr("fill", function(d) { return d;});
   }
 
 } // end myObject
@@ -166,7 +196,7 @@ window.onload = function() {
 
   myObject.svg = d3.select(myObject.leafletMap.getPanes().overlayPane).append("svg");
 
-  myObject.createDropDown();
-
+  myObject.stateSelector();
   myObject.typeSelector();
+  myObject.createLegend();
 }

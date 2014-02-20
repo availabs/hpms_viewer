@@ -1,19 +1,31 @@
 /* path styles */
 path {
 	fill:none;
-	stroke-width: 1px;
-	stroke: #000;
 	pointer-events: all;
 }
-
+/*
 path:hover {
 	stroke:#00f;
 	stroke-width: 3px;
-}
+}*/
 
 #mapDiv {
 	margin: 0 auto;
 	width: 960px;
 	height: 500px;
+}
+
+#mapLegend {
+	width: 100%;
+	margin: 0 auto;
+}
+
+#mapLegend svg {
+	display: block;
+	margin: 0 auto;
+}
+
+#mapLegend svg text {
+	fill: #fff;
 }
 
