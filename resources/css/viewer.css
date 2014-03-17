@@ -9,15 +9,36 @@ path:hover {
 	stroke-width: 3px;
 }*/
 
-#mapDiv {
+#contentHolder {
+	min-width: 1000px;
+	min-height: 750px;
+	position: relative;
+}
+
+#header {
+}
+
+#mapHolder {
+	width: 1000px;
+	position: relative;
 	margin: 0 auto;
-	width: 960px;
-	height: 500px;
+}
+
+#selectDiv {
+	float: left;
+}
+
+#mapDiv {
+	float: right;
+	width: 700px;
+	height: 700px;
 }
 
 #mapLegend {
-	width: 100%;
 	margin: 0 auto;
+	bottom: 0;
+	left: 0;
+	right: 0;
 }
 
 #mapLegend svg {

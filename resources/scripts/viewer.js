@@ -1,7 +1,7 @@
 myObject = {
 
   mapState: null,
-  roadType: 0,
+  roadType: 1,
   mapLoaded: false,
 
   load: function() {
@@ -11,54 +11,43 @@ myObject = {
             type: "POST",
             dataType: "json",
             data: {"roadType": myObject.roadType}
-           })
-     .done(function(data) {
+    })
+    .done(function(data) {
         // clear svg
         myObject.svg.selectAll("g").remove();
 
         // draw map
         myObject.mapLoaded = true;
-        myObject.visualize(topojson.feature(data, data.objects.geo));
-      });
+        myObject.drawRoutes(topojson.feature(data, data.objects.geo));
+    });
   }, // end load
 
-  visualize: function(geoJSON) {
-    
-    var min = d3.min(geoJSON.features, function(d) {
-      return d.properties.aadt;
-    });
-    var max = d3.max(geoJSON.features, function(d) {
-      return d.properties.aadt;
-    });
+  drawRoutes: function(geoJSON) {
+    var min = geoJSON.features[0].properties.aadt,
+        max = geoJSON.features[0].properties.aadt,
+        values = [];
 
-    var values = [];
     geoJSON.features.forEach(function(d) {
-      values.push(d.properties.aadt);
+        if (d.properties.aadt > max)
+            max = d.properties.aadt;
+        else if (d.properties.aadt < min)
+            min = d.properties.aadt;
+        values.push(d.properties.aadt);
     });
-    var domain = ss.jenks(values, 10);
-    console.log(min, domain, max)
+    var colorDomain = ss.jenks(values, 10).splice(1, 9);
 
-    /*
-    var roadColor = d3.scale.linear()
-                      .domain([(max*.75), (min+(max/2))/2, min])
-                      .range([colorbrewer.RdYlGn[9][0], colorbrewer.RdYlGn[9][4], colorbrewer.RdYlGn[9][8]])
-                      .clamp([true]);
-    
-    var roadColor = d3.scale.quantize()
-                      .domain([max, min])
-                      .range(colorbrewer.RdYlGn[10]);
-    */
-    var roadColor = d3.scale.quantile()
-                      .domain(domain)
-                      .range(colorbrewer.RdYlGn[10]);
+    function roadColor(val) {
+        var colors = colorbrewer.RdYlGn[10].reverse();
+        for (var i = 0; i < colorDomain.length; i++) {
+            if (val < colorDomain[i])
+                return colors[i];
+        }
+        return colors[colors.length-1];
+    };
 
     var roadWidth = d3.scale.quantize()
-                      .domain([7, 1])
-                      .range([1, 2, 3, 4, 5, 6, 7]);
-
-    // reposition map
-    var geoCenter = d3.geo.centroid(geoJSON);
-    myObject.leafletMap.setView([geoCenter[1], geoCenter[0]], 7);
+                        .domain([7, 1])
+                        .range([1, 2, 3, 4, 5, 6, 7]);
 
     var g = myObject.svg.append("g").attr("class", "leaflet-zoom-hide");
 
@@ -75,6 +64,11 @@ myObject = {
                    .attr("stroke-width", function(d) {
                       return roadWidth(d.properties.roadType)+"px";
                     });
+
+    // reposition map
+    console.log(bounds);
+    var geoCenter = d3.geo.centroid(geoJSON);
+    myObject.leafletMap.setView([geoCenter[1], geoCenter[0]], 6);
 
     myObject.leafletMap.on("viewreset", reset);
     reset();
@@ -105,16 +99,14 @@ myObject = {
       this.stream.point(point.x, point.y);
     };
 
-  }, // end visualize
+  },
 
   stateSelector: function() {
 
-    var dropDown = d3.select("#header")
-                     .append("select")
-                     .on("change", function() {
-                       myObject.mapState = this.options[this.selectedIndex].value;
-                       myObject.load();
-                     });
+    var dropDown = d3.select("#selectDiv")
+                    .append("select")
+                    .attr("multiple", "multiple")
+                    .attr("size", 8);;
 
     dropDown.append("option")
             .text("choose a state");
@@ -126,12 +118,12 @@ myObject = {
             type: "GET",
             async: false
            })
-     .done(function(data){
+    .done(function(data){
         data.forEach( function(d) {
-          if (d.id < 82) {
-            var obj = {name:d.tableName, code:d.stateFIPS};
-            myData.push(obj)
-          }
+            if (d.id < 82) {
+                var obj = {name:d.tableName, code:d.stateFIPS};
+                myData.push(obj)
+            }
         })
      });
 
@@ -140,19 +132,18 @@ myObject = {
             .enter()
             .append("option")
             .text(function(d) {return d.name;})
-            .attr("value", function(d) {return d.code;});
-  }, // end createDropDown
+            .on('click', function(d) {
+                console.log('???');
+                myObject.mapState = d.code;
+                myObject.load();
+            });
+  },
 
   typeSelector: function() {
-    var roadType = d3.select("#header")
-                     .append("select")
-                     .attr("multiple", "multiple")
-                     .attr("size", 8)
-                     .on("change", function() {
-                       myObject.roadType = this.options[this.selectedIndex].value;
-                       if (myObject.mapLoaded)
-                         myObject.load();
-                     });
+    var roadType = d3.select("#selectDiv")
+                        .append("select")
+                        .attr("multiple", "multiple")
+                        .attr("size", 8);
 
     roadType.append("option")
                      .text("All types")
@@ -165,7 +156,11 @@ myObject = {
             .enter()
             .append("option")
             .text(function(d) { return "Type "+d; })
-            .attr("value", function(d) { return d; });
+            .on('click', function(d) {
+                myObject.roadType = d;
+                if (myObject.mapLoaded)
+                    myObject.load();
+            });
   },
 
   createLegend: function() {
@@ -187,7 +182,7 @@ myObject = {
         .attr("fill", function(d) { return d;});
   }
 
-} // end myObject
+}
 
 window.onload = function() {
   myObject.mapLoaded = false;
