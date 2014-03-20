@@ -9,44 +9,126 @@ path:hover {
 	stroke-width: 3px;
 }*/
 
-#contentHolder {
-	min-width: 1000px;
-	min-height: 750px;
-	position: relative;
+/* navBar */
+#navBarBack {
+	height: 30px;
+	width: 100%;
+	min-width: 750px;
+	margin: 0 auto 0 auto;
+	background: #ec4;
+	position: fixed;
+	z-index: 5;
+	top: 0px;
+	left: 0px;
+	right: 0px;
 }
 
-#header {
-}
-
-#mapHolder {
-	width: 1000px;
-	position: relative;
+#navBar {
+	height: 30px;
 	margin: 0 auto;
-}
-
-#selectDiv {
+	background: #ec4;
+	font-size: 16px;
 	float: left;
 }
 
+#navBar a {
+	line-height:30px;
+	display: block;
+	float: left;
+	width: 165px;
+	text-decoration: none;
+	background-color: #ec4;
+	color: #448;
+	padding-left: 10px;
+}
+
+#navBar a:hover {
+	background-color: #ca2;
+	color: #661508;
+}
+/* end navBar */
+
+/* dropDown */
+#dropDown {
+	opacity: 0;
+	display: none;
+	position: absolute;
+	background: #ca2;
+	z-index: 5;
+	font-size: 16px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	max-width: 175px;
+	top: 30px;
+	height: 450px;
+	min-height: 180px;
+}
+
+#dropDown a {
+	line-height: 30px;
+	text-decoration: none;
+	background-color: #ec4;
+	padding-left: 10px;
+	width: 175px;
+	display: block;
+	color: #448;
+}
+
+#dropDown a:hover {
+	background-color: #ca2;
+	color: #661508;
+}
+/* end dropDown */
+
+/* selector */
+#selector {
+	height: 30px;
+	float: left;
+	font-size: 16px;
+}
+
+#selector a {
+	line-height: 30px;
+	max-height: 30px;
+	white-space: nowrap;
+	overflow: hidden;
+	width: 40px;
+	background-color: #ec4;
+	display: block;
+	float: left;
+	text-align: center;
+	color: #448;
+}
+
+#selector a:hover {
+	background-color: #ca2;
+	color: #661508;
+}
+/* end selector */
+
 #mapDiv {
-	float: right;
-	width: 700px;
-	height: 700px;
+	background-color: #fff8f0;
+	position: absolute;
+	min-width: 900px;
+	min-height: 500px;
+	bottom: 0px;
+	top: 0px;
+	left: 0px
+	right: 0px;
+	width: 100%;
+	height: 100%;
 }
 
 #mapLegend {
-	margin: 0 auto;
 	bottom: 0;
-	left: 0;
+	position: fixed;
 	right: 0;
+	left: 0;
+	margin: 0 auto;
 }
 
 #mapLegend svg {
-	display: block;
+	display: none;
 	margin: 0 auto;
+	border: 5px solid #ec4;
 }
-
-#mapLegend svg text {
-	fill: #fff;
-}
-
